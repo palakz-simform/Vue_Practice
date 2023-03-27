@@ -37,7 +37,6 @@ export default {
             ease: 'bounce.out',
             onComplete : done
           })
-         
         }
         const afterEnter=()=>{
           console.log("after enter")
