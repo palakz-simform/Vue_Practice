@@ -36,18 +36,20 @@ export default {
 </script>
 
 <style>
+/* You can comment enter to and leave from */
 /* enter classes */
-.toast-enter-from{
+/* .toast-enter-from{
   opacity:0;
   transform: translateY(-60px)
 }
-/* You can comment enter to and leave from */
+
 .toast-enter-to{  
   opacity: 1;
   transform: translate(0px);
-}
+} */
 .toast-enter-active{
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
+  animation: wooble 0.5s ease;
   
 }
 /* leave class */
@@ -61,5 +63,15 @@ export default {
 }
 .toast-leave-active{
   transition: all 0.3s ease;
+}
+
+@keyframes wooble{
+  0% {transform: translateY(-60px);opacity:0}
+  50% {transform: translateY(0px);opacity:1}
+  60% {transform:translateX(8px)}
+  70% {transform:translateX(-8px)}
+  80% {transform:translateX(4px)}
+  90% {transform:translateX(-4px)}
+  100% {transform:translateX(0px)}
 }
 </style>
