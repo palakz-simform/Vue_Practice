@@ -4,6 +4,7 @@
 import firebase from "firebase/app"
 import "firebase/auth"
 import 'firebase/firestore'  //not import 'firebase/database'  database is for old verion of databse whereas firestore is new database , database is for real time database  
+import 'firebase/storage';  //for audio file upload in storage
 
 const firebaseConfig = {
     apiKey: "AIzaSyDgEccqvESiTfpgOzmIEdTVyJgLF8hsahw",  //How we will be able to connect to firebase(to inform firebase we are the one sending request to firebase not someone else)
@@ -17,12 +18,13 @@ firebase.initializeApp(firebaseConfig)
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-
+const storage = firebase.storage(); //for audio file upload in storage
 const usersCollection = db.collection('users');  //db.collection has one argument which is the name of the collection to select
 
-export{
-    auth,db,
+export {
+    auth, db,
     usersCollection,
+    storage
 };
 
 //In this file we have integrated firebase SDK in our project
