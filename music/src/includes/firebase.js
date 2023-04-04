@@ -19,12 +19,15 @@ firebase.initializeApp(firebaseConfig)
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage(); //for audio file upload in storage
+
 const usersCollection = db.collection('users');  //db.collection has one argument which is the name of the collection to select
+const songsCollection = db.collection('songs');
 
 export {
     auth, db,
     usersCollection,
-    storage
+    storage,
+    songsCollection
 };
 
 //In this file we have integrated firebase SDK in our project
