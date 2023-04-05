@@ -1,6 +1,7 @@
 <template>
-      <!-- Music Header -->
-      <section class="w-full mb-8 py-14 text-center text-white relative">
+    <main>
+  <!-- Music Header -->
+  <section class="w-full mb-8 py-14 text-center text-white relative">
       <div
         class="absolute inset-0 w-full h-full box-border bg-contain music-bg"
         style="background-image: url(/assets/img/song-header.png)"
@@ -21,7 +22,7 @@
       </div>
     </section>
     <!-- Form -->
-    <section class="container mx-auto mt-6">
+    <section class="container mx-auto mt-6" id="comments">
       <div
         class="bg-white rounded border border-gray-200 relative flex flex-col"
       >
@@ -72,6 +73,8 @@
       </li>
   
     </ul>
+    </main>
+    
 
 </template>
 <script>
@@ -113,7 +116,6 @@ export default{
             return;
         }
         const { sort } = this.$route.query;
-        console.log(sort)
         this.sort = sort === '1' || sort === '2' ? sort : '1';
         this.song = docSnapshot.data();
         this.getComments();
