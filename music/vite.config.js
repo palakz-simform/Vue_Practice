@@ -10,6 +10,20 @@ export default defineConfig({
     registerType: "autoUpdate",
     devOptions: {
       enabled: true,
+    },
+    menifest: {
+      name: "Music App",
+      theme_color: "#ff5e3a",
+      icons: [
+        {
+          src: "assests/img/pwa-192x192.png",
+          sizes: "192x192",
+          type: "image/png"
+        }
+      ]
+    },
+    workbox: {
+      globPatterns: ["**/*.{js,css,html,png,jpg,}"]
     }
   })],
   resolve: {
