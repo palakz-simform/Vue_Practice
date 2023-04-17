@@ -1,20 +1,28 @@
 <template>
   <div class="about">
     <h1>{{ $route.params.member }}</h1>
+    <p>{{ store.counter }}</p>
+    <p>{{ store.doubleCount }}</p>
+    <button type="button" @click.prevent="store.increment">Press Me!</button>
   </div>
 </template>
 
 <script>
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useCounterStore } from '../stores/counter'
 export default {
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const store = useCounterStore();
 
     console.log(route.params.member)
     router.push({
       hash: "#test",
     })
+    return {
+      store
+    }
   }
 }
 </script>
