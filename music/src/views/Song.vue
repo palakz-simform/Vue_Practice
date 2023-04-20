@@ -8,7 +8,7 @@
         <!-- Play/Pause Button -->
         <button @click.prevent="newSong(song)" type="button"
           class="z-50 h-24 w-24 text-3xl bg-white text-black rounded-full focus:outline-none">
-          <i class="fas fa-play"></i>
+          <i class="fas" :class="{ 'fa-play': !playing, 'fa-pause': playing }"></i>
         </button>
         <div class="z-50 text-left ml-8">
           <!-- Song Info -->
@@ -90,6 +90,7 @@ export default {
   },
   computed: {
     ...mapState(useUserStore, ['userLoggedIn']),
+    ...mapState(usePlayerStore, ['playing']),
     sortedComments() {
       return this.comments.slice().sort((a, b) => {
         if (this.sort == "1") {
@@ -99,14 +100,14 @@ export default {
       });
     }
   },
-  async beforRouteEnter(to, from, next) {
+  async beforeRouteEnter(to, from, next) {
     const docSnapshot = await songsCollection.doc(to.params.id).get();
     next((vm) => {
       if (!docSnapshot.exists) {
         vm.$router.push({ name: 'home' });
         return;
       }
-      const { sort } = thvmis.$route.query;
+      const { sort } = vm.$route.query;
       vm.sort = sort === '1' || sort === '2' ? sort : '1';
       vm.song = docSnapshot.data();
       vm.getComments();
@@ -167,8 +168,6 @@ export default {
 
         }
       });
-
-
     }
   }
 }
