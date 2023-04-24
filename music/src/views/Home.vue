@@ -22,8 +22,8 @@
         <!-- Main Content -->
         <section class="container mx-auto">
             <div class="bg-white rounded border border-gray-200 relative flex flex-col">
-                <div class="px-6 pt-6 pb-5 font-bold border-b border-gray-200"
-                    v-icon-secondary="{ icon: 'headphones-alt', right: true }">
+                <div class="px-6 pt-6 pb-5 font-bold border-b border-gray-200">
+                    <!-- v-icon-secondary="{ icon: 'headphones-alt', right: true }"> -->
                     <span class="card-title">Songs</span>
                     <!-- Icon -->
 
@@ -39,77 +39,72 @@
     </main>
 </template>
 
-<script>
+<script setup>
 import {
     songsCollection
 } from "@/includes/firebase";
 import AppSongItem from "@/components/SongItem.vue"
-import IconSecondary from "@/directives/icon-secondary"
-export default {
-    name: 'Home',
-    components: {
-        AppSongItem
-    },
-    directives: {
-        'icon-secondary': IconSecondary,
-    },
-    data() {
-        return {
-            songs: [],
-            maxPerPage: 25,
-            pendingRequest: false,
-        }
-    },
-    async created() {
-        this.getSongs();
-        window.addEventListener('scroll', this.handleScroll)
-    },
-    beforeUnmount() {
-        window.removeEventListener('scroll', this.handleScroll)
-    },
-    methods: {
-        handleScroll() {
+import { ref, reactive, onBeforeUnmount, onMounted } from "vue"
 
-            const {
-                scrollTop,
-                offsetHeight
-            } = document.documentElement;
-            const {
-                innerHeight
-            } = window;
-            const bottomofWindow = Math.round(scrollTop) + innerHeight === offsetHeight
-            if (bottomofWindow) {
-                this.getSongs()
-            }
-        },
-        async getSongs() {
-            if (this.pendingRequest) {
-                return;
-            }
-            this.pendingRequest = true;
-            let snapshots;
-            if (this.songs.length) {
-                const lastDoc = await songsCollection.doc(this.songs[this.songs.length - 1].docID).get();
-                snapshots = await songsCollection
-                    .orderBy('modified_name')
-                    .startAfter(lastDoc)
-                    .limit(this.maxPerPage)
-                    .get();
-            } else {
-                snapshots = await songsCollection
-                    .orderBy('modified_name')
-                    .limit(this.maxPerPage)
-                    .get();
-            }
+// import IconSecondary from "../directives/icon-secondary"
 
-            snapshots.forEach((document) => {
-                this.songs.push({
-                    docID: document.id,
-                    ...document.data(),
-                })
-            })
-            this.pendingRequest = false;
-        }
+// directive('icon-secondary', IconSecondary)
+
+
+const songs = reactive([])
+const maxPerPage = ref(25)
+const pendingRequest = ref(false)
+
+onMounted(async () => {
+    getSongs();
+    window.addEventListener('scroll', handleScroll)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('scroll', handleScroll)
+})
+
+function handleScroll() {
+
+    const {
+        scrollTop,
+        offsetHeight
+    } = document.documentElement;
+    const {
+        innerHeight
+    } = window;
+    const bottomofWindow = Math.round(scrollTop) + innerHeight === offsetHeight
+    if (bottomofWindow) {
+        getSongs()
     }
 }
+async function getSongs() {
+    if (pendingRequest.value) {
+        return;
+    }
+    pendingRequest.value = true;
+    let snapshots;
+    if (songs.length) {
+        const lastDoc = await songsCollection.doc(songs[songs.length - 1].docID).get();
+        snapshots = await songsCollection
+            .orderBy('modified_name')
+            .startAfter(lastDoc)
+            .limit(maxPerPage.value)
+            .get();
+    } else {
+        snapshots = await songsCollection
+            .orderBy('modified_name')
+            .limit(maxPerPage.value)
+            .get();
+    }
+
+    snapshots.forEach((document) => {
+        songs.push({
+            docID: document.id,
+            ...document.data(),
+        })
+    })
+    pendingRequest.value = false;
+
+}
+
 </script>

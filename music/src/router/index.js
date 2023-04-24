@@ -74,4 +74,5 @@ router.beforeEach((to, from, next) => {
   }
 });
 
+
 export default router; //router is registered in the vue instance

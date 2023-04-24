@@ -14,7 +14,9 @@
         @drop.prevent.stop="upload($event)">
         <h5>Drop your files here</h5>
       </div>
+      <input type="file" multiple @change="upload($event)" />
       <hr class="my-6" />
+
       <!-- Progess Bars -->
       <div class="mb-4" v-for="upload in uploads" :key="upload.name">
         <!-- File Name -->
@@ -32,86 +34,82 @@
     </div>
   </div>
 </template>
-<script>
+<script setup>
 import { storage, auth, songsCollection } from '@/includes/firebase';
-import { toHandlers } from 'vue';
-export default {
-  name: "Upload",
-  data() {
-    return {
-      is_dragover: false,
-      uploads: []
+import { ref, reactive, onBeforeUnmount } from 'vue'
+
+const is_dragover = ref(false)
+const uploads = reactive([])
+
+
+function upload($event) {
+  is_dragover.value = false;
+  const files = $event.dataTransfer ? [...$event.dataTransfer.files] : [...$event.target.files];
+  files.forEach((file) => {
+    if (file.type !== 'audio/mpeg') {
+      return;
     }
-  },
-  methods: {
-    upload($event) {
-      this.is_dragover = false;
-      const files = $event.dataTransfer ? [...$event.dataTransfer.files] : [...$event.target.files];
-      files.forEach((file) => {
-        if (file.type !== 'audio/mpeg') {
-          return;
-        }
 
-        if (!navigator.onLine) {
-          this.uploads.push({
-            task: {},
-            current_progress: 100,
-            name: file.name,
-            variant: 'bg-red-400',
-            icon: 'fas fa-times',
-            text_class: 'text-red-400'
-          })
-          return;
-        }
-        const storageRef = storage.ref(); //music-75597.appspot.com
-        const songsRef = storageRef.child(`songs/${file.name}`);; //music-75597.appspot.com/songs/exapmle.mp3
-        const task = songsRef.put(file);
-        const uploadIndex = this.uploads.push({
-          task,
-          current_progress: 0,
-          name: file.name,
-          variant: 'bg-blue-400',
-          icon: 'fas fa-spinner fa-spin',
-          text_class: '',
-        }) - 1;
-        task.on('state_changed', (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          this.uploads[uploadIndex].current_progress = progress;
-        }, (error) => {
-          this.uploads[uploadIndex].variant = 'bg-red-400'
-          this.uploads[uploadIndex].icon = 'fas fa-times'
-          this.uploads[uploadIndex].text_class = 'text-red-400'
-          console.log(error)
-
-        }, async () => {
-          const song = {
-            uid: auth.currentUser.uid,
-            display_name: auth.currentUser.displayName,
-            original_name: task.snapshot.ref.name,
-            modified_name: task.snapshot.ref.name,
-            genre: '',
-            comment_count: 0,
-          };
-          song.url = await task.snapshot.ref.getDownloadURL()
-          await songsCollection.add(song);
-
-
-          this.uploads[uploadIndex].variant = 'bg-green-400'
-          this.uploads[uploadIndex].icon = 'fas fa-check'
-          this.uploads[uploadIndex].text_class = 'text-green-400'
-        });
+    if (!navigator.onLine) {
+      uploads.push({
+        task: {},
+        current_progress: 100,
+        name: file.name,
+        variant: 'bg-red-400',
+        icon: 'fas fa-times',
+        text_class: 'text-red-400'
       })
-    },
-    cancelUploads() {
-      this.uploads.forEach((upload) => {
-        upload.task.cancel();
-      })
+      return;
     }
-  },
-  beforeUnmount() {
-    this.uploads.forEach((upload) => {
+    const storageRef = storage.ref(); //music-75597.appspot.com
+    const songsRef = storageRef.child(`songs/${file.name}`);; //music-75597.appspot.com/songs/exapmle.mp3
+    const task = songsRef.put(file);
+    const uploadIndex = uploads.push({
+      task,
+      current_progress: 0,
+      name: file.name,
+      variant: 'bg-blue-400',
+      icon: 'fas fa-spinner fa-spin',
+      text_class: '',
+    }) - 1;
+    task.on('state_changed', (snapshot) => {
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      this.uploads[uploadIndex].current_progress = progress;
+    }, (error) => {
+      uploads[uploadIndex].variant = 'bg-red-400'
+      uploads[uploadIndex].icon = 'fas fa-times'
+      uploads[uploadIndex].text_class = 'text-red-400'
+      console.log(error)
+
+    }, async () => {
+      const song = {
+        uid: auth.currentUser.uid,
+        display_name: auth.currentUser.displayName,
+        original_name: task.snapshot.ref.name,
+        modified_name: task.snapshot.ref.name,
+        genre: '',
+        comment_count: 0,
+      };
+      song.url = await task.snapshot.ref.getDownloadURL()
+      await songsCollection.add(song);
+
+
+      uploads[uploadIndex].variant = 'bg-green-400'
+      uploads[uploadIndex].icon = 'fas fa-check'
+      uploads[uploadIndex].text_class = 'text-green-400'
+    });
+  })
+
+  function cancelUploads() {
+    uploads.forEach((upload) => {
       upload.task.cancel();
     })
   }
 }
+onBeforeUnmount(() => {
+  uploads.forEach((upload) => {
+    upload.task.cancel();
+  })
+})
+
 </script>

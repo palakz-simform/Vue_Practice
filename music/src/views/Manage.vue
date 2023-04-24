@@ -22,62 +22,59 @@
   </section>
 </template>
 
-<script>
+<script setup>
 // import useUserStore from "@/stores/user";
 import AppUpload from "@/components/Upload.vue";
 import { songsCollection, auth } from "@/includes/firebase";
 import CompositionItem from "@/components/CompositionItem.vue";
+import { ref, onMounted, reactive } from "vue";
+import { onBeforeRouteUpdate, useRouter } from 'vue-router'
+const router = useRouter()
 
-export default {
-  name: "Manage",
-  components: {
-    AppUpload,
-    CompositionItem,
-  },
-  data() {
-    return {
-      songs: [],
-      unsavedFlag: false,
-    };
-  },
-  async created() {
-    const snapshot = await songsCollection
-      .where("uid", "==", auth.currentUser.uid)
-      .get();
+const songs = reactive([])
+const unsavedFlag = ref(false)
 
-    snapshot.forEach(this.addSong);
-  },
-  methods: {
-    updateSong(i, values) {
-      this.songs[i].modified_name = values.modified_name;
-      this.songs[i].genre = values.genre;
-    },
-    removeSong(i) {
-      this.songs.splice(i, 1);
-    },
-    addSong(document) {
-      const song = {
-        ...document.data(),
-        docID: document.id,
-      };
+onMounted(async () => {
+  const snapshot = await songsCollection
+    .where("uid", "==", auth.currentUser.uid)
+    .get();
 
-      this.songs.push(song);
-    },
-    updateUnsavedFlag(value) {
-      this.unsavedFlag = value;
-    },
-  },
-  beforeRouteLeave(to, from, next) {
-    if (!this.unsavedFlag) {
-      next();
-    } else {
-      // eslint-disable-next-line no-alert, no-restricted-globals
-      const leave = confirm(
-        "You have unsaved changes. Are you sure you want to leave?"
-      );
-      next(leave);
-    }
-  },
+  snapshot.forEach(addSong);
+})
+
+function updateSong(i, values) {
+  songs[i].modified_name = values.modified_name;
+  songs[i].genre = values.genre;
+}
+function removeSong(i) {
+  songs.splice(i, 1);
+}
+function addSong(document) {
+  const song = {
+    ...document.data(),
+    docID: document.id,
+  };
+
+  songs.push(song);
+}
+function updateUnsavedFlag(value) {
+  unsavedFlag.value = value;
+}
+
+onBeforeRouteUpdate((to, from, next) => {
+  console.log("yeah")
+  if (!unsavedFlag.value) {
+    next();
+  } else {
+    // eslint-disable-next-line no-alert, no-restricted-globals
+    const leave = confirm(
+      "You have unsaved changes. Are you sure you want to leave?"
+    );
+    next(leave);
+    router.go()
+    // router.reload()
+  }
+})
   // beforeRouteLeave(to, from, next) {
   //   this.$refs.upload.cancelUploads();
   //   next();
@@ -91,5 +88,5 @@ export default {
   //     next({ name: "home" });
   //   }
   // },
-};
+
 </script>

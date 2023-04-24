@@ -6,9 +6,9 @@
         style="background-image: url(/assets/img/song-header.png)"></div>
       <div class="container mx-auto flex items-center">
         <!-- Play/Pause Button -->
-        <button @click.prevent="newSong(song)" type="button"
+        <button @click.prevent="playerStore.newSong(song)" type="button"
           class="z-50 h-24 w-24 text-3xl bg-white text-black rounded-full focus:outline-none">
-          <i class="fas" :class="{ 'fa-play': !playing, 'fa-pause': playing }"></i>
+          <i class="fas" :class="{ 'fa-play': !playerStore.playing, 'fa-pause': playerStore.playing }"></i>
         </button>
         <div class="z-50 text-left ml-8">
           <!-- Song Info -->
@@ -31,7 +31,7 @@
           <div class="text-white text-center font-bold p-4 mb-4" v-if="comment_show_alert" :class="comment_alert_variant">
             {{ comment_alert_message }}
           </div>
-          <vee-form :validation-schema="schema" @submit="addComment" v-if="userLoggedIn">
+          <vee-form :validation-schema="schema" @submit="addComment" v-if="userStore.userLoggedIn">
             <vee-field as="textarea" name="comment"
               class="block w-full py-1.5 px-3 text-gray-800 border border-gray-300 transition duration-500 focus:outline-none focus:border-black rounded mb-4"
               placeholder="Your comment here..."></vee-field>
@@ -67,108 +67,106 @@
     </ul>
   </main>
 </template>
-<script>
+<script setup>
 import { songsCollection, auth, commentsCollection } from "@/includes/firebase";
-import { mapState, mapActions } from "pinia";
 import useUserStore from "@/stores/user"
 import usePlayerStore from "@/stores/player"
-export default {
-  name: "Song",
-  data() {
-    return {
-      song: {},
-      schema: {
-        comment: 'required|min:3'
-      },
-      comment_in_submission: false,
-      comment_show_alert: false,
-      comment_alert_variant: 'bg-blue-500',
-      comment_alert_message: 'Please wait! Your comment is being submitted',
-      comments: [],
-      sort: '1',
+import { ref, reactive, computed, watch } from "vue";
+import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
+
+const router = useRouter();
+const route = useRoute();
+
+const userStore = useUserStore();
+const playerStore = usePlayerStore()
+
+let song = reactive({})
+const schema = {
+  comment: 'required|min:3'
+}
+const comment_in_submission = ref(false)
+const comment_show_alert = ref(false)
+const comment_alert_variant = ref('bg-blue-500')
+const comment_alert_message = ref('Please wait! Your comment is being submitted')
+const comments = reactive([])
+const sort = ref('1')
+
+
+const sortedComments = computed(() => {
+  return comments.slice().sort((a, b) => {
+    if (sort == "1") {
+      return new Date(b.datePosted) - new Date(a.datePosted);
     }
-  },
-  computed: {
-    ...mapState(useUserStore, ['userLoggedIn']),
-    ...mapState(usePlayerStore, ['playing']),
-    sortedComments() {
-      return this.comments.slice().sort((a, b) => {
-        if (this.sort == "1") {
-          return new Date(b.datePosted) - new Date(a.datePosted);
-        }
-        return new Date(a.datePosted) - new Date(b.datePosted);
-      });
-    }
-  },
-  async beforeRouteEnter(to, from, next) {
-    const docSnapshot = await songsCollection.doc(to.params.id).get();
-    next((vm) => {
-      if (!docSnapshot.exists) {
-        vm.$router.push({ name: 'home' });
-        return;
-      }
-      const { sort } = vm.$route.query;
-      vm.sort = sort === '1' || sort === '2' ? sort : '1';
-      vm.song = docSnapshot.data();
-      vm.getComments();
-    });
+    return new Date(a.datePosted) - new Date(b.datePosted);
+  });
+})
 
-  },
-  methods: {
-    ...mapActions(usePlayerStore, ["newSong"]),
-    async addComment(values, { resetForm }) {
-      this.comment_in_submission = true;
-      this.comment_show_alert = true;
-      this.comment_alert_variant = 'bg-blue-500';
-      this.comment_alert_message = 'Please wait! Your comment is being submitted';
-      const comment = {
+//BELOW CODE IS WORKING
+const docSnapshot = await songsCollection.doc(route.params.id).get();
 
-        content: values.comment,
-        datePosted: new Date().toString(),
-        sid: this.$route.params.id,
-        name: auth.currentUser.displayName,
-        uid: auth.currentUser.uid,
+if (!docSnapshot.exists) {
+  router.push({ name: 'home' });
 
-      };
+}
+const sorting = route.query.sort;
 
-      await commentsCollection.add(comment)
-      this.song.comment_count += 1;
-      await songsCollection.doc(this.$route.params.id).update({
-        comment_count: this.song.comment_count,
-      })
+sort.value = sorting === '1' || sorting === '2' ? sorting : '1';
+song = docSnapshot.data();
+getComments();
 
-      this.getComments();
-      this.comment_in_submission = false;
-      this.comment_alert_variant = 'bg-green-500';
-      this.comment_alert_message = 'Comment added!';
 
-      resetForm();
-    },
-    async getComments() {
-      const snapshots = await commentsCollection.where('sid', '==', this.$route.params.id).get();
-      this.comments = [];
-      snapshots.forEach((doc) => {
-        this.comments.push({
-          docID: doc.id,
-          ...doc.data()
-        })
-      })
-    }
-  },
-  watch: {
-    sort(newVal) {
-      if (newVal) {
-        if (newVal === this.$route.query.sort) {
-          return
-        }
-      }
-      this.$router.push({
-        query: {
-          sort: newVal,
 
-        }
-      });
+async function addComment(values, { resetForm }) {
+  comment_in_submission.value = true;
+  comment_show_alert.value = true;
+  comment_alert_variant.value = 'bg-blue-500';
+  comment_alert_message.value = 'Please wait! Your comment is being submitted';
+  const comment = {
+    content: values.comment,
+    datePosted: new Date().toString(),
+    sid: route.params.id,
+    name: auth.currentUser.displayName,
+    uid: auth.currentUser.uid,
+  };
+
+  await commentsCollection.add(comment)
+  song.comment_count += 1;
+  await songsCollection.doc(route.params.id).update({
+    comment_count: song.comment_count,
+  })
+
+  getComments();
+  console.log(await getComments())
+  comment_in_submission.value = false;
+  comment_alert_variant.value = 'bg-green-500';
+  comment_alert_message.value = 'Comment added!';
+
+  resetForm();
+}
+async function getComments() {
+  const snapshots = await commentsCollection.where('sid', '==', route.params.id).get();
+  comments.splice(0, comments.length);
+  snapshots.forEach((doc) => {
+    comments.push({
+      docID: doc.id,
+      ...doc.data()
+    })
+  })
+}
+
+watch(sort.value, (newVal) => {
+  if (newVal) {
+    if (newVal === route.query.sort) {
+      return
     }
   }
-}
+  router.push({
+    query: {
+      sort: newVal,
+
+    }
+  });
+})
+
+
 </script>

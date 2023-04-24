@@ -40,34 +40,36 @@
   </header>
 </template>
 
-<script>
-import { mapStores } from "pinia";
+<script setup>
 import useModalStore from "@/stores/modal";
 import useUserStore from "@/stores/user";
+import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import i18n from '../includes/i18n'
+const route = useRoute()
+const router = useRouter()
+const modalStore = useModalStore()
+const userStore = useUserStore()
 
-export default {
-  name: "AppHeader",
-  computed: {
-    ...mapStores(useModalStore, useUserStore),
-    currentLocale() {
-      return this.$i18n.locale === "fr" ? "French" : "English";
-    },
-  },
-  methods: {
-    toggleAuthModal() {
-      this.modalStore.isOpen = !this.modalStore.isOpen;
-      console.log(this.modalStore.isOpen);
-    },
-    signOut() {
-      this.userStore.signOut();
+const currentLocale = computed(() => {
+  return i18n.locale === "fr" ? "French" : "English";
+})
 
-      if (this.$route.meta.requiresAuth) {
-        this.$router.push({ name: "home" });
-      }
-    },
-    changeLocale() {
-      this.$i18n.locale = this.$i18n.locale === "fr" ? "en" : "fr";
-    },
-  },
-};
+
+function toggleAuthModal() {
+  modalStore.isOpen = !modalStore.isOpen;
+  console.log(modalStore.isOpen);
+}
+function signOut() {
+  userStore.signOut();
+
+  if (route.meta.requiresAuth) {
+    router.push({ name: "home" });
+  }
+}
+function changeLocale() {
+  i18n.locale = i18n.locale === "fr" ? "en" : "fr";
+}
+
+
 </script>
